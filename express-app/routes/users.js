@@ -1,42 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const sqlite3 = require('sqlite3').verbose();
-
 const db = new sqlite3.Database('mydb.db');
-
 db.run(`CREATE TABLE IF NOT EXISTS users (
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-name TEXT
-        )`);
+                                           id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                           name text)`);
 
 
-router.get('/', function(req, res, next) {
+
+router.get('/', function(req, res) {
   db.all("SELECT id, name FROM users", [], (err, rows) => {
     if (err) {
-      console.error(err.message);
-      res.status(500).send("Ошибка сервера");
+      res.status(500).send("Internal Server Error");
     } else {
       res.json({ items: rows });
     }
   });
 });
 
-router.post('/', function(req, res, next) {
+
+router.post('/', function(req, res) {
   const name = req.body.name;
 
   if (!name) {
-    return res.status(400).send("Not found");
+    return res.status(400).send("Name is required");
   }
 
   const insert = "INSERT INTO users (name) VALUES (?)";
-
   db.run(insert, [name], function(err) {
     if (err) {
-      console.error(err.message);
-      return res.status(500).send("500");
+      return res.status(500).send("Internal Server Error");
     }
 
-    // Создаем объект с новым ID из базы
     const newUser = {
       id: this.lastID,
       name: name
@@ -45,17 +40,15 @@ router.post('/', function(req, res, next) {
   });
 });
 
-router.get('/:id', function(req, res, next) {
+router.get('/:id', function(req, res) {
   const id = req.params.id;
   const sql = "SELECT id, name FROM users WHERE id = ?";
 
   db.get(sql, [id], (err, row) => {
     if (err) {
-      console.error(err.message);
-      res.status(500).send("500");
+      res.status(500).send("Internal Server Error");
     } else if (!row) {
-      // Если в базе ничего не нашлось (Задание 6)
-      res.status(404).send("Not found");
+      res.status(404).send("Not Found");
     } else {
       res.json(row);
     }
