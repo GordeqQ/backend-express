@@ -1,20 +1,65 @@
 const express = require('express');
 const router = express.Router();
-let users = [{"id":1, "name":"Roma Novikov"}, {"id":2, "name": "Gordey Aleksandrov"}];
-/* GET users listing. */
+const sqlite3 = require('sqlite3').verbose();
+
+const db = new sqlite3.Database('mydb.db');
+
+db.run(`CREATE TABLE IF NOT EXISTS users (
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+name TEXT
+        )`);
+
+
 router.get('/', function(req, res, next) {
-  let items = users;
-  res.json(items);
+  db.all("SELECT id, name FROM users", [], (err, rows) => {
+    if (err) {
+      console.error(err.message);
+      res.status(500).send("Ошибка сервера");
+    } else {
+      res.json({ items: rows });
+    }
+  });
 });
 
-router.post('/', function(req, res, next){
-  let newUser = {"id":users.length + 1, "name":req.body.name}
-  users.push(newUser);
-  res.status(201).json(newUser);
-})
+router.post('/', function(req, res, next) {
+  const name = req.body.name;
 
-router.get('/:id', function(req, res, next){
-  res.send(users[req.params.id - 1]);
-})
+  if (!name) {
+    return res.status(400).send("Not found");
+  }
+
+  const insert = "INSERT INTO users (name) VALUES (?)";
+
+  db.run(insert, [name], function(err) {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).send("500");
+    }
+
+    // Создаем объект с новым ID из базы
+    const newUser = {
+      id: this.lastID,
+      name: name
+    };
+    res.status(201).json(newUser);
+  });
+});
+
+router.get('/:id', function(req, res, next) {
+  const id = req.params.id;
+  const sql = "SELECT id, name FROM users WHERE id = ?";
+
+  db.get(sql, [id], (err, row) => {
+    if (err) {
+      console.error(err.message);
+      res.status(500).send("500");
+    } else if (!row) {
+      // Если в базе ничего не нашлось (Задание 6)
+      res.status(404).send("Not found");
+    } else {
+      res.json(row);
+    }
+  });
+});
 
 module.exports = router;
