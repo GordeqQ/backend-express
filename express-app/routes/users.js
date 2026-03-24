@@ -13,4 +13,8 @@ router.post('/', function(req, res, next){
   res.status(201).json(newUser);
 })
 
+router.get('/:id', function(req, res, next){
+  res.send(users[req.params.id - 1]);
+})
+
 module.exports = router;
